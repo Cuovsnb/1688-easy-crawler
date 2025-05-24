@@ -7,8 +7,10 @@ WebDriver管理器模块
 import os
 import random
 import logging
+import tempfile # Added
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
+from selenium.common.exceptions import SessionNotCreatedException # Added
 from webdriver_manager.chrome import ChromeDriverManager
 from typing import Optional
 
@@ -24,6 +26,7 @@ class WebDriverManager:
         :param config: 爬虫配置对象
         """
         self.config = config or CrawlerConfig()
+        self.temp_user_data_dir = None # For storing path to temp user data dir
         
     def create_driver(self, headless: bool = False, user_data_dir: Optional[str] = None) -> webdriver.Chrome:
         """
@@ -35,19 +38,24 @@ class WebDriverManager:
         options = self._create_chrome_options(headless, user_data_dir)
         
         try:
-            service = Service(ChromeDriverManager().install())
+            driver_path = ChromeDriverManager().install()
+            service = Service(executable_path=driver_path)
+            logging.info(f"Using ChromeDriver at: {driver_path}")
+            logging.info(f"Chrome options being used: {options.arguments}")
             driver = webdriver.Chrome(service=service, options=options)
             
-            # 应用反检测JavaScript
             self._apply_anti_detection(driver)
-            
-            # 设置额外的请求头
             self._set_request_headers(driver)
-            
             return driver
-            
+        except SessionNotCreatedException as e:
+            logging.error(f"SessionNotCreatedException during WebDriver initialization.")
+            logging.error(f"User-data-dir used: {self.temp_user_data_dir or user_data_dir}")
+            logging.error(f"Chrome options: {options.arguments}")
+            logging.error(f"Exception details: {e}")
+            raise
         except Exception as e:
-            logging.error(f"初始化WebDriver失败: {e}")
+            logging.error(f"Unexpected exception during WebDriver initialization: {e}")
+            logging.error(f"Chrome options: {options.arguments}")
             raise
     
     def _create_chrome_options(self, headless: bool, user_data_dir: Optional[str]) -> webdriver.ChromeOptions:
@@ -58,19 +66,71 @@ class WebDriverManager:
         :return: Chrome选项对象
         """
         options = webdriver.ChromeOptions()
-        
-        # 添加用户数据目录以保持登录状态
-        if user_data_dir and os.path.exists(user_data_dir):
+
+        if user_data_dir:
             options.add_argument(f'--user-data-dir={user_data_dir}')
-            options.add_argument('--profile-directory=Default')
-            print(f"已加载Chrome用户数据目录: {user_data_dir}")
+        else:
+            self.temp_user_data_dir = tempfile.mkdtemp()
+            options.add_argument(f'--user-data-dir={self.temp_user_data_dir}')
+            logging.info(f"Using temporary user data directory: {self.temp_user_data_dir}")
         
-        # 无头模式
         if headless:
             options.add_argument('--headless=new')
+
+        # Explicitly add required options
+        options.add_argument('--no-sandbox') # Already added by default config usually but ensure
+        options.add_argument('--disable-dev-shm-usage') # Already added by default config usually but ensure
+        options.add_argument('--disable-gpu') # From config.CHROME_OPTIONS
+        options.add_argument('--disable-extensions') # From config.CHROME_OPTIONS
+        options.add_argument('--remote-debugging-port=0')
+        options.add_argument('--start-maximized')
+        options.add_argument('--single-process')
+
+        # Add other options from config, avoiding duplicates if possible (though Chrome handles them)
+        # Standard options from config:
+        # CHROME_OPTIONS = [
+        #     '--disable-gpu', # Already added
+        #     '--window-size=1920,1080',
+        #     '--disable-extensions', # Already added
+        #     '--disable-popup-blocking',
+        #     '--ignore-certificate-errors',
+        #     '--disable-blink-features=AutomationControlled'
+        # ]
+        # Additional options added previously:
+        # '--disable-setuid-sandbox'
+        # '--disable-features=VizDisplayCompositor'
+
+        # Let's be very explicit and add them all, Chrome should handle duplicates.
+        current_options_set = set(options.arguments)
         
-        # 添加所有配置的Chrome选项
+        # Options from task description
+        explicit_options = [
+            '--disable-gpu', '--no-sandbox', '--disable-dev-shm-usage', 
+            '--remote-debugging-port=0', '--disable-extensions', 
+            '--start-maximized', '--single-process'
+        ]
+        for opt in explicit_options:
+            if opt not in current_options_set:
+                options.add_argument(opt)
+                current_options_set.add(opt)
+
+        # Options from config file
         for option in self.config.get_all_chrome_options():
+            if option not in current_options_set:
+                options.add_argument(option)
+                current_options_set.add(option)
+        
+        # Other potentially useful options (some might have been added in previous attempts)
+        other_useful_options = [
+            '--disable-setuid-sandbox',
+            '--disable-features=VizDisplayCompositor', # From previous attempts
+        ]
+        for opt in other_useful_options:
+            if opt not in current_options_set:
+                options.add_argument(opt)
+                current_options_set.add(opt)
+
+        # Anti-detection (already part of config.CHROME_OPTIONS via disable-blink-features)
             options.add_argument(option)
         
         # 禁用自动化检测
@@ -82,10 +142,22 @@ class WebDriverManager:
         
         # 添加随机用户代理
         user_agent = random.choice(self.config.USER_AGENTS)
-        options.add_argument(f'--user-agent={user_agent}')
+        if f'--user-agent={user_agent}' not in current_options_set:
+             options.add_argument(f'--user-agent={user_agent}')
         
         return options
-    
+
+    # Method to clean up temp user data dir if created
+    def cleanup_temp_user_data_dir(self):
+        if self.temp_user_data_dir and os.path.exists(self.temp_user_data_dir):
+            try:
+                import shutil
+                shutil.rmtree(self.temp_user_data_dir)
+                logging.info(f"Successfully cleaned up temporary user data directory: {self.temp_user_data_dir}")
+                self.temp_user_data_dir = None
+            except Exception as e:
+                logging.error(f"Error cleaning up temporary user data directory {self.temp_user_data_dir}: {e}")
+
     def _apply_anti_detection(self, driver: webdriver.Chrome):
         """
         应用反检测JavaScript
@@ -182,10 +254,14 @@ class WebDriverManager:
         try:
             if driver:
                 driver.quit()
-                print("浏览器已关闭")
+                # print("浏览器已关闭") # Reduced verbosity, covered by crawler.close()
         except Exception as e:
             logging.error(f"关闭浏览器时出错: {e}")
-    
+
+    # Consider calling cleanup_temp_user_data_dir() in the main crawler's close method
+    # if an instance of WebDriverManager is retained by the crawler.
+    # For now, OS will handle temp dir cleanup.
+
     def apply_stealth_mode(self, driver: webdriver.Chrome):
         """
         应用隐身模式设置

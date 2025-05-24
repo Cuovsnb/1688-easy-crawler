@@ -109,7 +109,7 @@ class SearchStrategy:
             time.sleep(get_random_delay(3, 5))
 
             # 检查是否被重定向到登录页面
-            if self.login_handler.is_login_page():
+            if self.login_handler.is_redirected_to_login(): # Changed here
                 print("❌ 检测到登录页面，尝试新标签页搜索")
 
                 # 步骤6: 在新标签页构造URL
@@ -186,7 +186,7 @@ class SearchStrategy:
             time.sleep(get_random_delay(3, 6))
 
             # 检查结果
-            if self.login_handler.is_login_page():
+            if self.login_handler.is_redirected_to_login(): # Changed here
                 print("❌ 缓存URL被重定向到登录页面")
                 return False
 
@@ -211,7 +211,7 @@ class SearchStrategy:
             time.sleep(get_random_delay(3, 6))
 
             # 检查是否被重定向到登录页面
-            if self.login_handler.is_login_page():
+            if self.login_handler.is_redirected_to_login(): # Changed here
                 print("❌ 被重定向到登录页面")
                 return False
 
@@ -243,7 +243,7 @@ class SearchStrategy:
                 return False
 
             # 2. 检查是否需要登录
-            if self.login_handler.is_login_page():
+            if self.login_handler.is_redirected_to_login(): # Changed here
                 print("检测到需要登录...")
                 if not self.login_handler.handle_login():
                     print("❌ 登录失败")
@@ -262,7 +262,7 @@ class SearchStrategy:
             time.sleep(get_random_delay(3, 5))
 
             # 6. 验证搜索结果
-            if self.login_handler.is_login_page():
+            if self.login_handler.is_redirected_to_login(): # Changed here
                 print("❌ 搜索后被重定向到登录页面")
                 # 尝试在新标签页构造URL
                 return self._try_direct_search_in_new_tab(keyword)
@@ -455,7 +455,7 @@ class SearchStrategy:
                     time.sleep(get_random_delay(3, 6))
 
                     # 检查是否成功
-                    if self.login_handler.is_login_page():
+                    if self.login_handler.is_redirected_to_login(): # Changed here
                         print(f"❌ URL {i} 被重定向到登录页面")
                         continue
 

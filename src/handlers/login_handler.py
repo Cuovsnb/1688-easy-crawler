@@ -31,6 +31,7 @@ class LoginHandler:
     def is_login_page(self) -> bool:
         """
         检查当前是否是登录页面
+        Note: `is_redirected_to_login()` is an enhanced version and generally preferred for internal checks.
         :return: True表示是登录页面
         """
         try:
@@ -121,7 +122,7 @@ class LoginHandler:
         """
         timeout = timeout or self.config.TIMEOUTS['login_timeout']
         
-        if not self.is_login_page():
+        if not self.is_redirected_to_login(): # Changed here
             print("当前页面不是登录页面，无需登录")
             return True
         
@@ -138,7 +139,7 @@ class LoginHandler:
             # 等待页面URL变化或超时
             start_time = time.time()
             while time.time() - start_time < timeout:
-                if not self.is_login_page() and self.driver.current_url != current_url:
+                if not self.is_redirected_to_login() and self.driver.current_url != current_url: # Changed here
                     print("\n=== 登录成功 ===")
                     print(f"已重定向到: {self.driver.current_url}")
                     time.sleep(2)  # 等待页面完全加载
@@ -156,7 +157,7 @@ class LoginHandler:
                     print(f"剩余时间: {remaining}秒...")
             
             # 检查最终状态
-            if self.is_login_page():
+            if self.is_redirected_to_login(): # Changed here
                 print("\n=== 登录超时 ===")
                 print("可能的原因：")
                 print("1. 未在指定时间内完成登录")
@@ -262,7 +263,7 @@ class LoginHandler:
             wait = WebDriverWait(self.driver, timeout)
             
             def not_login_page(driver):
-                return not self.is_login_page()
+                return not self.is_redirected_to_login() # Changed here
             
             wait.until(not_login_page)
             print("✅ 登录完成")

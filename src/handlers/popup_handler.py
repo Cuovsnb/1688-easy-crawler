@@ -30,39 +30,48 @@ class PopupHandler:
         self.config = config or CrawlerConfig()
         self.closer = PopupCloser(driver, config)
 
-    def detect_popups(self, save_debug: bool = True) -> bool:
+    def detect_popups(self, save_debug: bool = True, silent: bool = False) -> bool:
         """
         增强的弹窗检测，包括iframe检测和详细的调试信息
         :param save_debug: 是否保存调试信息
+        :param silent: 是否以静默模式运行 (不打印日志)
         :return: True表示检测到弹窗，False表示未检测到
         """
         try:
-            print("开始增强弹窗检测...")
+            if not silent:
+                print("开始增强弹窗检测...")
 
-            if save_debug:
+            if save_debug and not silent: # Debug saving should also be silent if requested
                 # 保存页面源码用于调试
                 save_page_source(self.driver, "popup_detection_debug.html", self.config.PATHS['html_debug'])
-                print("已保存页面源码用于调试")
+                if not silent:
+                    print("已保存页面源码用于调试")
 
             # 1. 检测iframe中的弹窗
-            print("检测iframe中的弹窗...")
-            iframe_popup_found = self._detect_iframe_popups()
+            if not silent:
+                print("检测iframe中的弹窗...")
+            iframe_popup_found = self._detect_iframe_popups(silent=silent)
             if iframe_popup_found:
-                print("在iframe中检测到弹窗")
+                if not silent:
+                    print("在iframe中检测到弹窗")
                 return True
 
             # 2. 检测主页面弹窗
-            print("检测主页面弹窗...")
-            main_popup_found = self._detect_main_page_popups()
+            if not silent:
+                print("检测主页面弹窗...")
+            main_popup_found = self._detect_main_page_popups(silent=silent)
             if main_popup_found:
-                print("在主页面检测到弹窗")
+                if not silent:
+                    print("在主页面检测到弹窗")
                 return True
-
-            print("未检测到明显的弹窗元素")
+            
+            if not silent:
+                print("未检测到明显的弹窗元素")
             return False
 
         except Exception as e:
-            print(f"检测弹窗时出错: {e}")
+            if not silent:
+                print(f"检测弹窗时出错: {e}")
             logging.error(f"检测弹窗时出错: {e}")
             return False
 
@@ -71,80 +80,85 @@ class PopupHandler:
         静默的弹窗检测，不输出详细信息
         :return: True表示检测到弹窗，False表示未检测到
         """
-        try:
-            # 1. 检测iframe中的弹窗
-            if self._detect_iframe_popups_silent():
-                return True
+        return self.detect_popups(save_debug=False, silent=True)
 
-            # 2. 检测主页面弹窗
-            if self._detect_main_page_popups_silent():
-                return True
-
-            return False
-
-        except Exception:
-            return False
-
-    def close_popups_enhanced(self, save_debug: bool = True) -> bool:
+    def close_popups_enhanced(self, save_debug: bool = True, silent: bool = False) -> bool:
         """
         增强的弹窗关闭方法，包括多种关闭策略和iframe处理
         :param save_debug: 是否保存调试信息
+        :param silent: 是否以静默模式运行 (不打印日志)
         :return: True表示成功关闭，False表示失败
         """
         try:
-            print("开始增强弹窗关闭流程...")
+            if not silent:
+                print("开始增强弹窗关闭流程...")
             success = False
 
-            if save_debug:
+            if save_debug and not silent:
                 # 保存关闭前的页面状态
                 save_page_source(self.driver, "before_close_popup.html", self.config.PATHS['html_debug'])
-                print("已保存关闭前页面状态")
+                if not silent:
+                    print("已保存关闭前页面状态")
 
             # 方法1: 处理iframe中的弹窗
-            print("方法1: 尝试处理iframe中的弹窗...")
-            if self.closer.close_iframe_popups():
-                print("iframe弹窗关闭成功")
+            if not silent:
+                print("方法1: 尝试处理iframe中的弹窗...")
+            if self.closer.close_iframe_popups(silent=silent): # Assuming PopupCloser is also refactored
+                if not silent:
+                    print("iframe弹窗关闭成功")
                 success = True
 
             # 方法2: 专门处理AiBUY弹窗
-            print("方法2: 尝试专门处理AiBUY弹窗...")
-            if self.closer.close_aibuy_popup_enhanced():
-                print("AiBUY弹窗关闭成功")
+            if not silent:
+                print("方法2: 尝试专门处理AiBUY弹窗...")
+            if self.closer.close_aibuy_popup_enhanced(silent=silent): # Assuming PopupCloser is also refactored
+                if not silent:
+                    print("AiBUY弹窗关闭成功")
                 success = True
 
             # 方法3: 点击关闭按钮
-            print("方法3: 尝试点击关闭按钮...")
-            if self.closer.click_close_buttons_enhanced():
-                print("点击关闭按钮成功")
+            if not silent:
+                print("方法3: 尝试点击关闭按钮...")
+            if self.closer.click_close_buttons_enhanced(silent=silent): # Assuming PopupCloser is also refactored
+                if not silent:
+                    print("点击关闭按钮成功")
                 success = True
 
             # 方法4: 尝试多种键盘操作
-            print("方法4: 尝试键盘操作...")
-            if self._try_keyboard_close():
-                print("键盘操作关闭成功")
+            if not silent:
+                print("方法4: 尝试键盘操作...")
+            if self._try_keyboard_close(silent=silent):
+                if not silent:
+                    print("键盘操作关闭成功")
                 success = True
 
             # 方法5: 点击遮罩层关闭
-            print("方法5: 尝试点击遮罩层关闭...")
-            if self._click_overlay_to_close():
-                print("点击遮罩层关闭成功")
+            if not silent:
+                print("方法5: 尝试点击遮罩层关闭...")
+            if self._click_overlay_to_close(silent=silent):
+                if not silent:
+                    print("点击遮罩层关闭成功")
                 success = True
 
             # 方法6: JavaScript强制关闭
-            print("方法6: 尝试JavaScript强制关闭...")
-            if self._javascript_force_close():
-                print("JavaScript强制关闭成功")
+            if not silent:
+                print("方法6: 尝试JavaScript强制关闭...")
+            if self._javascript_force_close(silent=silent):
+                if not silent:
+                    print("JavaScript强制关闭成功")
                 success = True
 
-            if save_debug:
+            if save_debug and not silent:
                 # 保存关闭后的页面状态
                 save_page_source(self.driver, "after_close_popup.html", self.config.PATHS['html_debug'])
-                print("已保存关闭后页面状态")
+                if not silent:
+                    print("已保存关闭后页面状态")
 
             return success
 
         except Exception as e:
-            print(f"增强弹窗关闭失败: {e}")
+            if not silent:
+                print(f"增强弹窗关闭失败: {e}")
             logging.error(f"增强弹窗关闭失败: {e}")
             return False
 
@@ -153,37 +167,7 @@ class PopupHandler:
         静默的弹窗关闭方法，不输出详细信息
         :return: True表示成功关闭，False表示失败
         """
-        try:
-            success = False
-
-            # 方法1: 处理iframe中的弹窗
-            if self.closer.close_iframe_popups_silent():
-                success = True
-
-            # 方法2: 专门处理AiBUY弹窗
-            if self.closer.close_aibuy_popup_silent():
-                success = True
-
-            # 方法3: 点击关闭按钮
-            if self.closer.click_close_buttons_silent():
-                success = True
-
-            # 方法4: 尝试多种键盘操作
-            if self._try_keyboard_close_silent():
-                success = True
-
-            # 方法5: 点击遮罩层关闭
-            if self._click_overlay_to_close_silent():
-                success = True
-
-            # 方法6: JavaScript强制关闭
-            if self._javascript_force_close_silent():
-                success = True
-
-            return success
-
-        except Exception:
-            return False
+        return self.close_popups_enhanced(save_debug=False, silent=True)
 
     def handle_search_page_popups_comprehensive(self, keyword: str):
         """
@@ -269,51 +253,55 @@ class PopupHandler:
             # 保存错误页面
             save_page_source(self.driver, f"popup_handling_error_{keyword}.html", self.config.PATHS['html_debug'])
 
-    def _detect_iframe_popups(self) -> bool:
+    def _detect_iframe_popups(self, silent: bool = False) -> bool:
         """检测iframe中的弹窗"""
         try:
             iframes = self.driver.find_elements(By.TAG_NAME, 'iframe')
-            print(f"找到 {len(iframes)} 个iframe")
+            if not silent:
+                print(f"找到 {len(iframes)} 个iframe")
 
             for i, iframe in enumerate(iframes):
                 try:
-                    print(f"检测iframe {i+1}/{len(iframes)}")
+                    if not silent:
+                        print(f"检测iframe {i+1}/{len(iframes)}")
 
                     # 获取iframe信息
                     iframe_src = iframe.get_attribute('src') or ''
                     iframe_id = iframe.get_attribute('id') or ''
                     iframe_class = iframe.get_attribute('class') or ''
-
-                    print(f"  iframe信息: src='{iframe_src[:50]}...', id='{iframe_id}', class='{iframe_class}'")
+                    if not silent:
+                        print(f"  iframe信息: src='{iframe_src[:50]}...', id='{iframe_id}', class='{iframe_class}'")
 
                     # 切换到iframe
                     self.driver.switch_to.frame(iframe)
 
-                    # 在iframe中查找弹窗元素
-                    iframe_popup_found = self._check_iframe_popup_elements()
+                    # 在iframe中查找弹窗元素 (Pass silent to helper)
+                    iframe_popup_found = self._check_iframe_popup_elements(silent=silent)
 
                     # 切回主文档
                     self.driver.switch_to.default_content()
 
                     if iframe_popup_found:
-                        print(f"  在iframe {i+1} 中检测到弹窗")
+                        if not silent:
+                            print(f"  在iframe {i+1} 中检测到弹窗")
                         return True
                     else:
-                        print(f"  iframe {i+1} 中未检测到弹窗")
+                        if not silent:
+                            print(f"  iframe {i+1} 中未检测到弹窗")
 
                 except Exception as iframe_error:
-                    print(f"  检测iframe {i+1} 时出错: {iframe_error}")
+                    if not silent:
+                        print(f"  检测iframe {i+1} 时出错: {iframe_error}")
                     # 确保切回主文档
                     try:
                         self.driver.switch_to.default_content()
                     except:
                         pass
                     continue
-
             return False
-
         except Exception as e:
-            print(f"检测iframe弹窗时出错: {e}")
+            if not silent:
+                print(f"检测iframe弹窗时出错: {e}")
             # 确保切回主文档
             try:
                 self.driver.switch_to.default_content()
@@ -321,341 +309,174 @@ class PopupHandler:
                 pass
             return False
 
-    def _check_iframe_popup_elements(self) -> bool:
+    def _check_iframe_popup_elements(self, silent: bool = False) -> bool:
         """在iframe中检查弹窗元素"""
         try:
             iframe_popup_selectors = [
-                "div:contains('AiBUY')",
-                "div:contains('下载')",
-                "div:contains('采购助手')",
-                "div[class*='popup']",
-                "div[class*='modal']",
-                "div[class*='dialog']",
+                "div:contains('AiBUY')", "div:contains('下载')", "div:contains('采购助手')",
+                "div[class*='popup']", "div[class*='modal']", "div[class*='dialog']",
                 "div[style*='position: fixed']"
             ]
-
             for selector in iframe_popup_selectors:
                 try:
                     if ":contains(" in selector:
-                        # 转换为XPath
                         text = selector.split(":contains('")[1].split("')")[0]
                         tag = selector.split(":contains(")[0]
                         xpath_selector = f"//{tag}[contains(text(), '{text}')]"
                         elements = self.driver.find_elements(By.XPATH, xpath_selector)
                     else:
                         elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
-
                     visible_elements = [el for el in elements if el.is_displayed()]
                     if visible_elements:
-                        print(f"    在iframe中找到弹窗元素: {selector}")
+                        if not silent:
+                            print(f"    在iframe中找到弹窗元素: {selector}")
                         return True
                 except Exception:
                     continue
-
             return False
-
         except Exception:
             return False
 
     def _detect_iframe_popups_silent(self) -> bool:
         """静默检测iframe中的弹窗"""
-        try:
-            iframes = self.driver.find_elements(By.TAG_NAME, 'iframe')
-            for iframe in iframes:
-                try:
-                    self.driver.switch_to.frame(iframe)
+        return self._detect_iframe_popups(silent=True)
 
-                    iframe_popup_selectors = [
-                        "div:contains('AiBUY')",
-                        "div:contains('下载')",
-                        "div:contains('采购助手')",
-                        "div[class*='popup']",
-                        "div[class*='modal']",
-                        "div[class*='dialog']",
-                        "div[style*='position: fixed']"
-                    ]
-
-                    for selector in iframe_popup_selectors:
-                        try:
-                            if ":contains(" in selector:
-                                text = selector.split(":contains('")[1].split("')")[0]
-                                tag = selector.split(":contains(")[0]
-                                xpath_selector = f"//{tag}[contains(text(), '{text}')]"
-                                elements = self.driver.find_elements(By.XPATH, xpath_selector)
-                            else:
-                                elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
-
-                            visible_elements = [el for el in elements if el.is_displayed()]
-                            if visible_elements:
-                                self.driver.switch_to.default_content()
-                                return True
-                        except Exception:
-                            continue
-
-                    self.driver.switch_to.default_content()
-
-                except Exception:
-                    try:
-                        self.driver.switch_to.default_content()
-                    except:
-                        pass
-                    continue
-
-            return False
-
-        except Exception:
-            try:
-                self.driver.switch_to.default_content()
-            except:
-                pass
-            return False
-
-    def _detect_main_page_popups(self) -> bool:
+    def _detect_main_page_popups(self, silent: bool = False) -> bool:
         """检测主页面弹窗"""
         try:
             popup_found = False
-
             for selector in self.config.POPUP_SELECTORS:
                 try:
-                    # 处理包含文本的选择器
                     if ":contains(" in selector:
-                        # 转换为XPath
                         text = selector.split(":contains('")[1].split("')")[0]
                         tag = selector.split(":contains(")[0]
                         xpath_selector = f"//{tag}[contains(text(), '{text}')]"
                         elements = self.driver.find_elements(By.XPATH, xpath_selector)
                     else:
                         elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
-
                     visible_elements = [el for el in elements if el.is_displayed()]
                     if visible_elements:
-                        print(f"检测到弹窗元素: {selector} (共{len(visible_elements)}个)")
+                        if not silent:
+                            print(f"检测到弹窗元素: {selector} (共{len(visible_elements)}个)")
                         popup_found = True
-
-                        # 显示元素详细信息
-                        for i, el in enumerate(visible_elements[:3]):  # 最多显示3个
-                            try:
-                                element_text = el.text.strip()[:50]
-                                element_class = el.get_attribute('class') or ''
-                                element_id = el.get_attribute('id') or ''
-                                print(f"  元素{i+1}: 文本='{element_text}', 类名='{element_class[:30]}', ID='{element_id}'")
-
-                                # 查找关闭按钮
-                                close_buttons = el.find_elements(By.XPATH, ".//*[contains(@class, 'close') or contains(text(), '×') or contains(text(), 'X') or contains(@aria-label, 'close')]")
-                                if close_buttons:
-                                    print(f"    找到{len(close_buttons)}个可能的关闭按钮")
-                                    for j, btn in enumerate(close_buttons[:2]):
-                                        btn_text = btn.text.strip()
-                                        btn_class = btn.get_attribute('class') or ''
-                                        print(f"      关闭按钮{j+1}: 文本='{btn_text}', 类名='{btn_class}'")
-
-                            except Exception as detail_error:
-                                print(f"    获取元素详细信息时出错: {detail_error}")
-
+                        if not silent:
+                            for i, el in enumerate(visible_elements[:3]):
+                                try:
+                                    element_text = el.text.strip()[:50]
+                                    element_class = el.get_attribute('class') or ''
+                                    element_id = el.get_attribute('id') or ''
+                                    print(f"  元素{i+1}: 文本='{element_text}', 类名='{element_class[:30]}', ID='{element_id}'")
+                                    close_buttons = el.find_elements(By.XPATH, ".//*[contains(@class, 'close') or contains(text(), '×') or contains(text(), 'X') or contains(@aria-label, 'close')]")
+                                    if close_buttons:
+                                        print(f"    找到{len(close_buttons)}个可能的关闭按钮")
+                                        for j, btn in enumerate(close_buttons[:2]):
+                                            btn_text = btn.text.strip()
+                                            btn_class = btn.get_attribute('class') or ''
+                                            print(f"      关闭按钮{j+1}: 文本='{btn_text}', 类名='{btn_class}'")
+                                except Exception as detail_error:
+                                    print(f"    获取元素详细信息时出错: {detail_error}")
                 except Exception as e:
-                    print(f"检测选择器 '{selector}' 时出错: {e}")
+                    if not silent:
+                        print(f"检测选择器 '{selector}' 时出错: {e}")
                     continue
-
             return popup_found
-
         except Exception as e:
-            print(f"检测主页面弹窗时出错: {e}")
+            if not silent:
+                print(f"检测主页面弹窗时出错: {e}")
             return False
 
     def _detect_main_page_popups_silent(self) -> bool:
         """静默检测主页面弹窗"""
-        try:
-            for selector in self.config.POPUP_SELECTORS:
-                try:
-                    if ":contains(" in selector:
-                        text = selector.split(":contains('")[1].split("')")[0]
-                        tag = selector.split(":contains(")[0]
-                        xpath_selector = f"//{tag}[contains(text(), '{text}')]"
-                        elements = self.driver.find_elements(By.XPATH, xpath_selector)
-                    else:
-                        elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
+        return self._detect_main_page_popups(silent=True)
 
-                    visible_elements = [el for el in elements if el.is_displayed()]
-                    if visible_elements:
-                        return True
-
-                except Exception:
-                    continue
-
-            return False
-
-        except Exception:
-            return False
-
-    def _try_keyboard_close(self) -> bool:
+    def _try_keyboard_close(self, silent: bool = False) -> bool:
         """尝试键盘操作关闭弹窗"""
         try:
-            print("尝试键盘操作关闭弹窗...")
-
-            # 尝试ESC键
+            if not silent:
+                print("尝试键盘操作关闭弹窗...")
             actions = ActionChains(self.driver)
             actions.send_keys(Keys.ESCAPE).perform()
             time.sleep(1)
-            print("已发送ESC键")
-
-            # 尝试多次ESC
-            for i in range(3):
+            if not silent:
+                print("已发送ESC键")
+            for _ in range(3):
                 actions.send_keys(Keys.ESCAPE).perform()
                 time.sleep(0.5)
-
             return True
-
         except Exception as e:
-            print(f"键盘操作失败: {e}")
+            if not silent:
+                print(f"键盘操作失败: {e}")
             return False
 
     def _try_keyboard_close_silent(self) -> bool:
         """静默键盘操作关闭弹窗"""
-        try:
-            actions = ActionChains(self.driver)
-            actions.send_keys(Keys.ESCAPE).perform()
-            time.sleep(1)
+        return self._try_keyboard_close(silent=True)
 
-            for i in range(3):
-                actions.send_keys(Keys.ESCAPE).perform()
-                time.sleep(0.5)
-
-            return True
-
-        except Exception:
-            return False
-
-    def _click_overlay_to_close(self) -> bool:
+    def _click_overlay_to_close(self, silent: bool = False) -> bool:
         """点击遮罩层关闭弹窗"""
         try:
-            print("尝试点击遮罩层关闭弹窗...")
-
-            overlay_selectors = [
-                ".overlay",
-                ".modal-backdrop",
-                ".popup-overlay",
-                ".dialog-overlay",
-                "div[style*='position: fixed'][style*='background']",
-                "div[style*='position: absolute'][style*='background']"
-            ]
-
-            for selector in overlay_selectors:
-                try:
-                    elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
-                    visible_elements = [el for el in elements if el.is_displayed()]
-
-                    if visible_elements:
-                        print(f"找到遮罩层: {selector}")
-                        self.driver.execute_script("arguments[0].click();", visible_elements[0])
-                        time.sleep(1)
-                        return True
-
-                except Exception:
-                    continue
-
-            return False
-
-        except Exception as e:
-            print(f"点击遮罩层失败: {e}")
-            return False
-
-    def _click_overlay_to_close_silent(self) -> bool:
-        """静默点击遮罩层关闭弹窗"""
-        try:
+            if not silent:
+                print("尝试点击遮罩层关闭弹窗...")
             overlay_selectors = [
                 ".overlay", ".modal-backdrop", ".popup-overlay", ".dialog-overlay",
                 "div[style*='position: fixed'][style*='background']",
                 "div[style*='position: absolute'][style*='background']"
             ]
-
             for selector in overlay_selectors:
                 try:
                     elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
                     visible_elements = [el for el in elements if el.is_displayed()]
                     if visible_elements:
+                        if not silent:
+                            print(f"找到遮罩层: {selector}")
                         self.driver.execute_script("arguments[0].click();", visible_elements[0])
                         time.sleep(1)
                         return True
                 except Exception:
                     continue
             return False
-        except Exception:
+        except Exception as e:
+            if not silent:
+                print(f"点击遮罩层失败: {e}")
             return False
 
-    def _javascript_force_close(self) -> bool:
+    def _click_overlay_to_close_silent(self) -> bool:
+        """静默点击遮罩层关闭弹窗"""
+        return self._click_overlay_to_close(silent=True)
+
+    def _javascript_force_close(self, silent: bool = False) -> bool:
         """JavaScript强制关闭弹窗"""
         try:
-            print("尝试JavaScript强制关闭弹窗...")
-
+            if not silent:
+                print("尝试JavaScript强制关闭弹窗...")
             js_code = """
             var removed = 0;
-
-            // 移除固定定位的元素
             var fixedElements = document.querySelectorAll('div[style*="position: fixed"], div[style*="position: absolute"]');
             fixedElements.forEach(function(el) {
-                if (el.style.zIndex > 100) {
-                    el.remove();
-                    removed++;
-                }
+                if (el.style.zIndex > 100) { el.remove(); removed++; }
             });
-
-            // 移除常见弹窗类
             var popupClasses = ['.modal', '.popup', '.dialog', '.overlay', '.next-dialog-wrapper'];
             popupClasses.forEach(function(className) {
                 var elements = document.querySelectorAll(className);
-                elements.forEach(function(el) {
-                    if (el.offsetParent !== null) {
-                        el.remove();
-                        removed++;
-                    }
-                });
+                elements.forEach(function(el) { if (el.offsetParent !== null) { el.remove(); removed++; } });
             });
-
             return removed;
             """
-
             removed_count = self.driver.execute_script(js_code)
             if removed_count > 0:
-                print(f"JavaScript强制移除了{removed_count}个可能的弹窗元素")
+                if not silent:
+                    print(f"JavaScript强制移除了{removed_count}个可能的弹窗元素")
                 time.sleep(1)
                 return True
             else:
-                print("JavaScript未找到需要移除的弹窗元素")
+                if not silent:
+                    print("JavaScript未找到需要移除的弹窗元素")
                 return False
-
         except Exception as e:
-            print(f"JavaScript强制关闭失败: {e}")
+            if not silent:
+                print(f"JavaScript强制关闭失败: {e}")
             return False
 
     def _javascript_force_close_silent(self) -> bool:
         """静默JavaScript强制关闭弹窗"""
-        try:
-            js_code = """
-            var removed = 0;
-            var fixedElements = document.querySelectorAll('div[style*="position: fixed"], div[style*="position: absolute"]');
-            fixedElements.forEach(function(el) {
-                if (el.style.zIndex > 100) {
-                    el.remove();
-                    removed++;
-                }
-            });
-
-            var popupClasses = ['.modal', '.popup', '.dialog', '.overlay', '.next-dialog-wrapper'];
-            popupClasses.forEach(function(className) {
-                var elements = document.querySelectorAll(className);
-                elements.forEach(function(el) {
-                    if (el.offsetParent !== null) {
-                        el.remove();
-                        removed++;
-                    }
-                });
-            });
-
-            return removed;
-            """
-
-            removed_count = self.driver.execute_script(js_code)
-            return removed_count > 0
-
-        except Exception:
-            return False
+        return self._javascript_force_close(silent=True)
