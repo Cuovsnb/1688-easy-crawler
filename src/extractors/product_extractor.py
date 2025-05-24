@@ -228,6 +228,43 @@ class ProductExtractor:
 
         return products
 
+    def extract_products_method5(self) -> List[Dict[str, Any]]:
+        """方式5: 使用数据属性查找商品"""
+        products = []
+        try:
+            data_attribute_selectors = [
+                "div[data-spm*='offer']",
+                "a[data-productid]",
+                "div[data-offerid]",
+                "*[data-tracker-type='product']",
+                "li[data-itemid]",
+                "div[data-p_idx]", # Common in some Alibaba layouts
+                "div[data-expo-type='offer']", # Another common one
+                "div[data-widget-type='offer']"
+            ]
+
+            for selector in data_attribute_selectors:
+                try:
+                    elements = self.driver.find_elements(By.CSS_SELECTOR, selector)
+                    if elements:
+                        print(f"使用数据属性选择器 '{selector}' 找到 {len(elements)} 个商品")
+                        for element in elements[:20]:  # Process up to 20 elements
+                            product_details = self.extract_product_details_from_element(element)
+                            if product_details:
+                                products.append(product_details)
+                        if products: # If this selector yielded results, no need to try others in this method
+                            break 
+                except Exception as el_ex:
+                    # Log selector specific error, but continue to next selector
+                    logging.warning(f"方式5提取时，选择器 '{selector}' 出错: {el_ex}")
+                    continue # Try next selector
+
+        except Exception as e:
+            print(f"方式5提取商品时出错: {e}")
+            logging.error(f"方式5提取商品时出错: {e}")
+        
+        return products
+
     def extract_product_details_from_element(self, element) -> Optional[Dict[str, Any]]:
         """从元素中提取商品详细信息"""
         product_info = {
