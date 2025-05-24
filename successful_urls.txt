@@ -1,0 +1,13 @@
+# 1688成功URL缓存文件
+# 格式: 关键词|成功的URL|时间戳|备注
+# 示例: 手机|https://s.1688.com/selloffer/offer_search.htm?keywords=%E6%89%8B%E6%9C%BA|2024-01-01 12:00:00|直接访问成功
+
+# 说明:
+# 1. 每行一个记录，用|分隔
+# 2. 关键词: 搜索的关键词
+# 3. 成功的URL: 能够直接访问的搜索结果页面URL
+# 4. 时间戳: 记录成功的时间
+# 5. 备注: 可选的备注信息
+
+# 示例记录:
+手机|https://s.1688.com/selloffer/offer_search.htm?keywords=%E6%89%8B%E6%9C%BA&spm=a260k.home2024.searchbox.0|2024-12-25 05:09:14|直接访问成功
